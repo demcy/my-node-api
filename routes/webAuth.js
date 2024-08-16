@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user'); // Updated path
+const User = require('../models/user'); // Correct path
 const path = require('path');
 require('dotenv').config();
 

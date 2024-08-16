@@ -3,73 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login/Register</title>
+    <title>Auth</title>
 </head>
 <body>
-    <h1>Login or Register</h1>
+    <h1>Login/Register</h1>
     <form id="auth-form">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Submit</button>
     </form>
-
-    <script>
-        document.getElementById('auth-form').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form from submitting the traditional way
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.token) {
-                    // Success: handle token (e.g., store it, redirect user)
-                    console.log('Success:', data);
-                } else {
-                    // Handle other success messages
-                    console.log('Message:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    </script>
+    <div id="message"></div>
+    <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
-
-<!-- public/index.html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Real-Time Chat</title>
-  <script defer src="/chat.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    #messages { list-style-type: none; padding: 0; }
-    #messages li { padding: 8px; margin-bottom: 2px; background-color: #f3f3f3; }
-  </style>
-</head>
-<body>
-  <h1>Real-Time Chat</h1>
-  <ul id="messages"></ul>
-  <form id="form" action="">
-    <input id="input" autocomplete="off" /><button>Send</button>
-  </form>
-</body>
-</html> -->
