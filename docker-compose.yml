@@ -18,6 +18,10 @@ services:
       - mongo
     environment:
       MONGO_URI: mongodb://mongo:27017/mydatabase
+    volumes:
+      - .:/usr/src/app           # Mount the current directory inside the container
+      - /usr/src/app/node_modules # Prevent overwriting node_modules with local one
+    command: npm run dev          # Use Nodemon to start the server
 
 volumes:
   mongo_data:

@@ -13,8 +13,11 @@ RUN npm install
 # Copy the rest of the application code.
 COPY . .
 
+# Install nodemon globally
+RUN npm install -g nodemon
+
 # Expose port 3000.
 EXPOSE 3000
 
-# Run the application.
-CMD [ "node", "index.js" ]
+# Start the application with Nodemon
+CMD ["npm", "run", "dev"]
