@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.forEach((value, key) => {
             data[key] = value;
         });
-
+        console.log(data)
         try {
             let response = await fetch('/api/auth/login', {
                 method: 'POST',

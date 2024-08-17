@@ -6,6 +6,7 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const path = require('path');
 const apiAuthRoutes = require('./routes/apiAuth');
+const usersRoutes = require('./routes/users');
 const webAuthRoutes = require('./routes/webAuth');
 const authenticatedUsers = new Set();
 require('dotenv').config();
@@ -34,6 +35,7 @@ app.use(session({
 
 app.use('/api/auth', apiAuthRoutes);
 app.use('/', webAuthRoutes);
+app.use('/api/users', usersRoutes);
 
 // Handle 404
 app.use((req, res, next) => {
