@@ -26,6 +26,10 @@
             max-height: 50px;
             overflow: hidden;
         }
+        #message {
+            width: 100%;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +51,12 @@
             </form>
         
             <div id="message"></div>
+        </div>
+        <div id="send_area">
+            <form id="messageForm">
+                <textarea id="message" name="message" placeholder="Message" rows="3" required></textarea>
+                <button type="submit">Send</button>
+            </form>
         </div>
     </div>
 </body>
