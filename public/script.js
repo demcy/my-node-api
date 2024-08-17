@@ -1,18 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('authForm');
+    const authForm = document.getElementById('authForm');
     const messageDiv = document.getElementById('message');
     const userCountDiv = document.getElementById('userCount');
     const currentPeopleDiv = document.getElementById('currentPeople');
     const recentUsersDiv = document.getElementById('recentUsers');
+    const authDiv = document.getElementById('auth');
+    const sendDiv = document.getElementById('send_area');
+    
 
     // Initialize Socket.IO client
     const socket = io(); // Connect to the Socket.IO server
 
     // Handle form submission
-    form.addEventListener('submit', async (event) => {
+    authForm.addEventListener('submit', async (event) => {
         event.preventDefault(); // Prevent the default form submission
 
-        const formData = new FormData(form);
+        const formData = new FormData(authForm);
         const data = {};
         formData.forEach((value, key) => {
             data[key] = value;
@@ -37,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 200:
                     // Successful login
                     messageDiv.textContent = result.message;
-                    console.log('Token:', result.token);
+                    authDiv.style.display = 'none';
+                    sendDiv.style.display = 'block';
                     // Emit the authenticate event with the token
                     socket.emit('authenticate', result.token, (socketResponse) => {
                         console.log(socketResponse);
@@ -48,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             console.error('Socket authentication failed:', socketResponse.error);
                         }
                     });
+                    localStorage.setItem('token', result.token);
                     break;
 
                 case 401:
@@ -102,7 +107,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    
+    async function manageIO() {
+        let token = localStorage.getItem('token')
+        try {
+            const response = await fetch('/is-valid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: token,
+                })
+            });
+            const data = await response.json();
+            if (data.valid) {
+                authDiv.style.display = 'none';
+                sendDiv.style.display = 'block';
+                socket.emit('authenticate', token, () => console.log('reconnect'));
+            }
+        } catch (error) {
+            console.error('Error fetching token valid:', error);
+        }
+    }
+
+    // ioManagement
+    manageIO();
 
     // Fetch authenticated users count on page load
     fetchAuthenticatedUsers();
