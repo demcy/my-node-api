@@ -1,12 +1,12 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user'); // Updated path
 const router = express.Router();
-require('dotenv').config();
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
+const authenticatedUsers = require('../utils/authenticatedUsers'); // Import the shared module
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Register route for API
+// Register route
 router.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
@@ -27,7 +27,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login route for API
+// Login route
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
@@ -35,7 +35,7 @@ router.post('/login', async (req, res) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(400).json({ message: 'No user found' });
         }
 
         const isValid = await user.comparePassword(password);
@@ -51,5 +51,7 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ message: 'Error processing login request', error: err.message });
     }
 });
+
+// No need to include authenticated-users-count route here anymore
 
 module.exports = router;
