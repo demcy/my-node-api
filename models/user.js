@@ -18,4 +18,9 @@ userSchema.methods.comparePassword = function(password) {
   return bcrypt.compare(password, this.password);
 };
 
+// Method to find a user by username
+userSchema.statics.findByUserName = function(username) {
+  return this.findOne({ username });
+};
+
 module.exports = mongoose.model('User', userSchema);

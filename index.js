@@ -2,13 +2,13 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const authenticatedUsers = require('./utils/authenticatedUsers'); 
 const session = require('express-session');
 const mongoose = require('mongoose');
 const path = require('path');
 const apiAuthRoutes = require('./routes/apiAuth');
 const usersRoutes = require('./routes/users');
 const webAuthRoutes = require('./routes/webAuth');
-const authenticatedUsers = new Set();
 require('dotenv').config();
 
 const app = express();
@@ -49,13 +49,13 @@ app.use((err, req, res, next) => {
 });
 
 // Socket.IO setup
-// Add this to your existing socket event handlers
 io.on('connection', (socket) => {
     console.log('A user connected');
-
     const clientsCount = io.engine.clientsCount; // Total clients across all namespaces
-
     console.log(`Total connected clients: ${clientsCount}`);
+
+    // Emit the current client count to all clients
+    io.emit('current-people-update', clientsCount);
 
     socket.on('authenticate', (token, callback) => {
         console.log('Authenticate event received with token:', token);
@@ -77,7 +77,11 @@ io.on('connection', (socket) => {
             socket.user = user;
             authenticatedUsers.add(user.username);
             console.log(`User authenticated: ${user.username}`);
-            io.emit('authenticated-users-update', authenticatedUsers.size); // Emit updated user count
+            console.log(`Authenticated users count: ${authenticatedUsers.size}`);
+            io.emit('authenticated-users-update', {
+                count: authenticatedUsers.size,
+                users: Array.from(authenticatedUsers)
+            });
             callback({ success: true });
         });
     });
@@ -86,10 +90,15 @@ io.on('connection', (socket) => {
         console.log('A user disconnected');
         const updatedClientsCount = io.engine.clientsCount;
         console.log(`Total connected clients: ${updatedClientsCount}`);
+        io.emit('current-people-update', updatedClientsCount);
+
         if (socket.user) {
             authenticatedUsers.delete(socket.user.username);
             console.log(`User disconnected: ${socket.user.username}`);
-            io.emit('authenticated-users-update', authenticatedUsers.size); // Emit updated user count
+            io.emit('authenticated-users-update', {
+                count: authenticatedUsers.size,
+                users: Array.from(authenticatedUsers)
+            });
         } else {
             console.log('User disconnected without authentication');
         }

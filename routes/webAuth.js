@@ -11,7 +11,11 @@ router.get('/', (req, res) => {
 
 // Route to get count of authenticated users
 router.get('/authenticated-users-count', (req, res) => {
-    res.json({ count: authenticatedUsers.size });
+    console.log(authenticatedUsers.size)
+    res.json({ 
+        count: authenticatedUsers.size,
+        users: Array.from(authenticatedUsers) 
+    });
 });
 
 module.exports = router;

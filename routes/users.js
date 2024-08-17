@@ -7,7 +7,7 @@ const router = express.Router();
 // Access protected route - Get current user's profile
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findByUserName(req.user.username).select('-password');
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -17,12 +17,12 @@ router.get('/profile', auth, async (req, res) => {
 // Example of another protected route - Update user info
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, email } = req.body;
-    const user = await User.findById(req.user.id);
+    const { username, password } = req.body;
+    const user = await User.findByUserName(req.user.username);
 
     if (user) {
-      user.name = name || user.name;
-      user.email = email || user.email;
+      user.username = username || user.username;
+      user.password = password || user.password;
 
       const updatedUser = await user.save();
       res.json(updatedUser);
