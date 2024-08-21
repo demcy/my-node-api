@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const authenticatedUsers = require('../utils/authenticatedUsers'); // Import the shared module
 require('dotenv').config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -19,6 +18,9 @@ router.post('/register', async (req, res) => {
 
         const user = new User({ username, password });
         await user.save();
+        
+        req.session.isOnline = true;
+        req.session.username = username;
 
         res.status(201).json({ message: 'Registration successful' });
     } catch (err) {
@@ -42,6 +44,9 @@ router.post('/login', async (req, res) => {
 
         if (isValid) {
             const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
+            req.session.isOnline = true;
+            req.session.username = username;
+            req.session.token = token;
             res.json({ message: 'Login successful', token });
         } else {
             res.status(401).json({ message: 'Invalid credentials' });

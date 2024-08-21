@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Chat</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/script.js" defer></script>
+    <style>
+        body {
+            background-color: greenyellow;
+        }
+        input {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #chat {
+        width: 70%;
+        float: left;
+        height: 90vh;
+        border-right-style: ridge;
+        border-width: 50px;
+        border-color: green;
+        padding: 10px;
+        }
+        #io {
+        width: 20%;
+        float: right;
+        height: 90vh;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        border-left-style: double;
+        border-width: 50px;
+        border-color: green;
+        padding: 10px;
+        }
+        #recentUsers {
+            max-height: 50px;
+            overflow: hidden;
+            border-top-style: dotted;
+            border-width: 5px;
+            border-color: green;
+            padding: 10px;
+        }
+        #message {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #send_area {
+            display: none;
+        }
+        #auth {
+            border-top-style: dotted;
+            border-width: 5px;
+            border-color: green;
+            padding-top: 10px;
+            
+        }
+    </style>
+</head>
+<body>
+    <div id="chat">
+        <h1>Socket.IO Chat</h1>
+    </div>
+    <div id="io">
+        <div>
+            <h3><div id="currentPeople"></div></h3>
+            <h3><div id="userCount"></div></h3>
+            <!-- New section for recent authenticated users -->
+            <div id="recentUsers"></div>
+        </div>
+        <div id="auth">
+            <form id="authForm">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Submit</button>
+            </form>
+        
+            <div id="message"></div>
+        </div>
+        <div id="send_area">
+            <form id="messageForm">
+                <textarea id="message" name="message" placeholder="Message" rows="3" required></textarea>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,8 +2,10 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
-const authenticatedUsers = require('./utils/authenticatedUsers'); 
+//const authenticatedUsers = require('./utils/authenticatedUsers'); 
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const { MongoClient } = require('mongodb');
 const mongoose = require('mongoose');
 const path = require('path');
 const apiAuthRoutes = require('./routes/apiAuth');
@@ -20,18 +22,42 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/my-simple-
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Connect to MongoDB
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
+
+// Create a MongoDB client using the native driver
+// const clientPromise = MongoClient.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//     .then(client => {
+//         console.log('Connected to MongoDB with native MongoClient');
+//         return client;
+//     })
+//     .catch(err => {
+//         console.error('MongoClient connection error:', err);
+//     });
+    //const clientPromise = mongoose.connection.asPromise();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
+const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'your-session-secret',
     resave: false,
-    saveUninitialized: false
-}));
+    saveUninitialized: true,
+    cookie: { maxAge: 1 * 24 * 60 * 60 * 1000 }, //time period in miliseconds
+    store: MongoStore.create({ 
+        client: mongoose.connection.getClient(), // Use mongoose's underlying MongoDB client
+        dbName: 'mydatabase',
+        ttl: 1 * 24 * 60 * 60, // = 1 days. Default
+        touchAfter: 1 * 60 * 60, // time period in seconds
+        autoRemove: 'interval',
+        autoRemoveInterval: 1, // In minutes. Default
+        // crypto: {
+        //     secret: 'session-crypto-key'
+        //   }
+     })
+});
+app.use(sessionMiddleware);
 
 app.use('/api/auth', apiAuthRoutes);
 app.use('/', webAuthRoutes);
@@ -48,62 +74,51 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Socket.IO setup
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, {}, next);
+});
+
+// Socket.IO setups
 io.on('connection', (socket) => {
+    
     console.log('A user connected');
     const clientsCount = io.engine.clientsCount; // Total clients across all namespaces
     console.log(`Total connected clients: ${clientsCount}`);
-
+    socket.request.session.isOnline = true;
+    socket.request.session.save();
+    console.log(socket.request.session.id)
     // Emit the current client count to all clients
     io.emit('current-people-update', clientsCount);
+    io.emit('authenticated-users-update');
+    // const socketSession = socket.request.session;
+    // console.log(socketSession)
+    // console.log(socketSession.id)
 
-    socket.on('authenticate', (token, callback) => {
-        console.log('Authenticate event received with token:', token);
+    // 
+    // if (socketSession.username) {
+    //     socket.username = socketSession.username;
+    //     console.log(socket.username)
+    // }
 
-        if (!token) {
-            console.error('No token provided');
-            callback({ error: 'No token provided' });
-            socket.disconnect();
-            return;
-        }
-
-        jwt.verify(token, JWT_SECRET, (err, user) => {
-            if (err) {
-                console.error('Authentication error:', err);
-                callback({ error: 'Authentication error' });
-                socket.disconnect();
-                return;
-            }
-            socket.user = user;
-            authenticatedUsers.add(user.username);
-            console.log(`User authenticated: ${user.username}`);
-            console.log(`Authenticated users count: ${authenticatedUsers.size}`);
-            io.emit('authenticated-users-update', {
-                count: authenticatedUsers.size,
-                users: Array.from(authenticatedUsers)
-            });
-            callback({ success: true });
-        });
+    socket.on('authenticate', () => {
+        io.emit('authenticated-users-update');
     });
 
     socket.on('disconnect', () => {
+        let socketSession = socket.request.session;
+        socketSession.isOnline =  false ;
+        socketSession.save();
+        console.log(socketSession.id, socketSession)
+        
+
         console.log('A user disconnected');
         const updatedClientsCount = io.engine.clientsCount;
         console.log(`Total connected clients: ${updatedClientsCount}`);
         io.emit('current-people-update', updatedClientsCount);
-
-        if (socket.user) {
-            authenticatedUsers.delete(socket.user.username);
-            console.log(`User disconnected: ${socket.user.username}`);
-            io.emit('authenticated-users-update', {
-                count: authenticatedUsers.size,
-                users: Array.from(authenticatedUsers)
-            });
-        } else {
-            console.log('User disconnected without authentication');
-        }
+        io.emit('authenticated-users-update');
     });
 });
+
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

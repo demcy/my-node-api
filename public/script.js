@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const recentUsersDiv = document.getElementById('recentUsers');
     const authDiv = document.getElementById('auth');
     const sendDiv = document.getElementById('send_area');
+
+    //setTimeout(() => {
+        fetchAuthenticatedUsers();
+        manageIO();
+
+    //}, 100);
     
 
     // Initialize Socket.IO client
@@ -34,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
-            console.log(result);
+            //console.log(result);
 
             switch (response.status) {
                 case 200:
@@ -42,24 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     messageDiv.textContent = result.message;
                     authDiv.style.display = 'none';
                     sendDiv.style.display = 'block';
-                    // Emit the authenticate event with the token
-                    socket.emit('authenticate', result.token, (socketResponse) => {
-                        console.log(socketResponse);
-                        if (socketResponse.success) {
-                            console.log('Socket authentication successful');
-                            // Optionally, fetch the authenticated users list
-                        } else {
-                            console.error('Socket authentication failed:', socketResponse.error);
-                        }
-                    });
-                    localStorage.setItem('token', result.token);
+                    fetchAuthenticatedUsers();
+                    socket.emit('authenticate');
                     break;
-
                 case 401:
                     // Invalid credentials
                     messageDiv.textContent = 'Invalid credentials. Please try again.';
                     break;
-
                 case 400:
                     // User not found, attempt registration
                     response = await fetch('/api/auth/register', {
@@ -95,12 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch the number of authenticated users from the server
     async function fetchAuthenticatedUsers() {
         try {
-            const response = await fetch('/authenticated-users-count');
+            const response = await fetch('/authenticated-users');
             const data = await response.json();
-            console.log(`Currently authenticated users: ${data.count}`);
             userCountDiv.textContent = `Currently authenticated users: ${data.count}`;
-            let userNames = data.users.map(user => user).join(', ');
-            recentUsersDiv.textContent = `Recently Authenticated People : ${userNames}`;
+            console.log(data.usernames)
+            let usernames = data.usernames.map(username => username).join(', ');
+            recentUsersDiv.textContent = `Recently Authenticated People : ${usernames}`;
         } catch (error) {
             console.error('Error fetching authenticated users:', error);
             userCountDiv.textContent = 'Error loading user count';
@@ -108,22 +103,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function manageIO() {
-        let token = localStorage.getItem('token')
         try {
-            const response = await fetch('/is-valid', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    token: token,
-                })
-            });
+            const response = await fetch('/is-authenticated');
             const data = await response.json();
             if (data.valid) {
                 authDiv.style.display = 'none';
                 sendDiv.style.display = 'block';
-                socket.emit('authenticate', token, () => console.log('reconnect'));
+                //socket.emit('authenticate', token, () => console.log('reconnect'));
+            } else {
+                authDiv.style.display = 'block';
+                sendDiv.style.display = 'none';
             }
         } catch (error) {
             console.error('Error fetching token valid:', error);
@@ -131,11 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ioManagement
-    manageIO();
 
     // Fetch authenticated users count on page load
-    fetchAuthenticatedUsers();
-
+    
     // Update current people count
     socket.on('current-people-update', (count) => {
         currentPeopleDiv.textContent = `Currently connected people: ${count}`;
@@ -143,10 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update authenticated users list
     socket.on('authenticated-users-update', (data) => {
-        userCountDiv.textContent = `Currently Authenticated People: ${data.count}`;
-        // Update the list of authenticated users
-        let userNames = data.users.map(user => user).join(', ');
-        recentUsersDiv.textContent = `Recently Authenticated People : ${userNames}`;
-
+        fetchAuthenticatedUsers();
     });
 });
