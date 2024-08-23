@@ -47,6 +47,7 @@ router.post('/login', async (req, res) => {
             req.session.isOnline = true;
             req.session.username = username;
             req.session.token = token;
+            res.set('Authorization', token);
             res.json({ message: 'Login successful', token });
         } else {
             res.status(401).json({ message: 'Invalid credentials' });

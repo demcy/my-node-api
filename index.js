@@ -26,17 +26,6 @@ mongoose.connect(MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Create a MongoDB client using the native driver
-// const clientPromise = MongoClient.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-//     .then(client => {
-//         console.log('Connected to MongoDB with native MongoClient');
-//         return client;
-//     })
-//     .catch(err => {
-//         console.error('MongoClient connection error:', err);
-//     });
-    //const clientPromise = mongoose.connection.asPromise();
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -79,37 +68,51 @@ io.use((socket, next) => {
 });
 
 // Socket.IO setups
-io.on('connection', (socket) => {
-    
+io.on('connection', async (socket) => {
+    const sessionId = socket.request.session.id
+    try {
+        const closedSession = await mongoose.connection.db.collection('sessions').findOne({_id: sessionId});
+        const sessionData = JSON.parse(closedSession.session)
+        sessionData.isOnline = true;
+        const updatedData = JSON.stringify(sessionData);
+        await mongoose.connection.db.collection('sessions').updateOne(
+            { _id: sessionId },  // Match the document by _id
+            { $set: { session: updatedData } }  // Set the updated session string
+        );
+    } catch (err) {
+        console.error('Error retrieving sessions:', err);
+    }
+    // socket.request.session.isOnline = true;
+    // socket.request.session.save();
+    // console.log(socket.request.session.id)
+
     console.log('A user connected');
     const clientsCount = io.engine.clientsCount; // Total clients across all namespaces
     console.log(`Total connected clients: ${clientsCount}`);
-    socket.request.session.isOnline = true;
-    socket.request.session.save();
-    console.log(socket.request.session.id)
     // Emit the current client count to all clients
     io.emit('current-people-update', clientsCount);
     io.emit('authenticated-users-update');
-    // const socketSession = socket.request.session;
-    // console.log(socketSession)
-    // console.log(socketSession.id)
-
-    // 
-    // if (socketSession.username) {
-    //     socket.username = socketSession.username;
-    //     console.log(socket.username)
-    // }
-
     socket.on('authenticate', () => {
         io.emit('authenticated-users-update');
     });
-
-    socket.on('disconnect', () => {
-        let socketSession = socket.request.session;
-        socketSession.isOnline =  false ;
-        socketSession.save();
-        console.log(socketSession.id, socketSession)
+    socket.on('disconnect', async () => {
+        try {
+            const closedSession = await mongoose.connection.db.collection('sessions').findOne({_id: sessionId});
+            const sessionData = JSON.parse(closedSession.session)
+            sessionData.isOnline = false;
+            const updatedData = JSON.stringify(sessionData);
+            await mongoose.connection.db.collection('sessions').updateOne(
+                { _id: sessionId },  // Match the document by _id
+                { $set: { session: updatedData } }  // Set the updated session string
+            );
+        } catch (err) {
+            console.error('Error retrieving sessions:', err);
+        }
         
+        // let socketSession = socket.request.session;
+        // socketSession.isOnline =  false ;
+        // socketSession.save();
+        // console.log(socketSession.id, socketSession)
 
         console.log('A user disconnected');
         const updatedClientsCount = io.engine.clientsCount;
