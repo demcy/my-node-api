@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
+const User = require('../models/user');
 
 
 // Serve the form for login or registration
@@ -48,6 +49,37 @@ router.get('/is-authenticated', (req, res) => {
         });
     }
 });
+
+router.get('/history', async (req, res) => {
+    try {
+      const messages = await mongoose.connection.db.collection('messages').find({}).toArray();
+      const transformedMessages = await Promise.all(messages.map( async msg => {
+        const username = await getUsername(msg.user);
+        return {
+            message: msg.message,
+            user: username,
+            timestamp: msg.timestamp
+        };
+    }));
+    transformedMessages.sort((a, b) => a.timestamp - b.timestamp);
+      
+      res.json(transformedMessages);
+    } catch(err) {
+      console.error('Message Save Error:', err);
+        res.status(500).json({ message: 'Error processing message send request', error: err.message });
+    }
+  });
+
+  const getUsername = async (userId) => {
+    try {
+        const user = await mongoose.connection.db.collection('users').findOne({_id: userId});
+        console.log("A", user ? user.username : 'Unknown User')
+        return user ? user.username : 'Unknown User';
+    } catch (err) {
+        console.error('Fetching User Error:', err);
+        res.status(500).json({ message: 'Error fetching user', error: err.message });
+    }
+};
 
 
 

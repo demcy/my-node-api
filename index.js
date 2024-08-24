@@ -11,6 +11,7 @@ const path = require('path');
 const apiAuthRoutes = require('./routes/apiAuth');
 const usersRoutes = require('./routes/users');
 const webAuthRoutes = require('./routes/webAuth');
+const chatRoutes = require('./routes/chat');
 require('dotenv').config();
 
 const app = express();
@@ -51,6 +52,7 @@ app.use(sessionMiddleware);
 app.use('/api/auth', apiAuthRoutes);
 app.use('/', webAuthRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/messages', chatRoutes);
 
 // Handle 404
 app.use((req, res, next) => {
@@ -95,6 +97,9 @@ io.on('connection', async (socket) => {
     socket.on('authenticate', () => {
         io.emit('authenticated-users-update');
     });
+    socket.on('message', () => {
+        io.emit('update-chat');
+    })
     socket.on('disconnect', async () => {
         try {
             const closedSession = await mongoose.connection.db.collection('sessions').findOne({_id: sessionId});

@@ -55,7 +55,12 @@
             border-width: 5px;
             border-color: green;
             padding-top: 10px;
-            
+        }
+        .user {
+            font-weight: bold;
+        }
+        .message {
+            margin: 10px;
         }
     </style>
 </head>
@@ -77,13 +82,15 @@
                 <button type="submit">Submit</button>
             </form>
         
-            <div id="message"></div>
+            <div id="authError"></div>
         </div>
         <div id="send_area">
             <form id="messageForm">
                 <textarea id="message" name="message" placeholder="Message" rows="3" required></textarea>
                 <button type="submit">Send</button>
             </form>
+
+            <div id="messageError"></div>
         </div>
     </div>
 </body>

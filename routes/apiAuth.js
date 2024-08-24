@@ -46,8 +46,9 @@ router.post('/login', async (req, res) => {
             const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
             req.session.isOnline = true;
             req.session.username = username;
+            req.session.userId = user.id;
             req.session.token = token;
-            res.set('Authorization', token);
+            //res.set('Authorization', token);
             res.json({ message: 'Login successful', token });
         } else {
             res.status(401).json({ message: 'Invalid credentials' });
